@@ -1,11 +1,10 @@
 #if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem; // Yeni sistem
+using UnityEngine.InputSystem;
 #endif
 using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    [Header("Tune")]
     public float flapForce = 7.5f;
     public float startY = 0.6f;
 
@@ -23,18 +22,15 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        if (GameManager.Instance == null || GameManager.Instance.State != GameState.Playing) return;
+        if (GameManager.Instance == null) return;
 
+        // Tap algısı (yeni + eski input)
         bool tapped = false;
-
-        // --- Yeni Input System (varsa)
 #if ENABLE_INPUT_SYSTEM
         if (Pointer.current != null && Pointer.current.press.wasPressedThisFrame) tapped = true;
         if (!tapped && Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame) tapped = true;
         if (!tapped && Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame) tapped = true;
 #endif
-
-        // --- Eski Input System (fallback) - TouchPhase'i fully-qualified kullan
         if (!tapped)
         {
             tapped = Input.GetMouseButtonDown(0)
@@ -42,16 +38,24 @@ public class PlayerController : MonoBehaviour
                      || Input.GetKeyDown(KeyCode.Space);
         }
 
-        if (!tapped) return;
-
-        if (waitingFirstTap)
+        // İlk tap: WaitingTap'ten Playing'e geçiş
+        if (GameManager.Instance.State == GameState.WaitingTap && tapped)
         {
             waitingFirstTap = false;
-            rb.gravityScale = 3.0f;
+            rb.gravityScale = 3f;
+            rb.linearVelocity = Vector2.zero;
+            rb.AddForce(Vector2.up * flapForce, ForceMode2D.Impulse);
+
+            GameManager.Instance.ActivatePlay(); // <<< oyun şimdi gerçekten başlar
+            return;
         }
 
-        rb.linearVelocity = Vector2.zero;
-        rb.AddForce(Vector2.up * flapForce, ForceMode2D.Impulse);
+        // Normal oyun sırasında zıplama
+        if (GameManager.Instance.State == GameState.Playing && tapped)
+        {
+            rb.linearVelocity = Vector2.zero;
+            rb.AddForce(Vector2.up * flapForce, ForceMode2D.Impulse);
+        }
     }
 
     public void Begin()
@@ -60,21 +64,16 @@ public class PlayerController : MonoBehaviour
         waitingFirstTap = true;
 
         rb.simulated = true;
-        rb.gravityScale = 0f;   // ilk tap’e kadar düşmesin
+        rb.gravityScale = 0f;           // ilk tap’e kadar düşmesin
         rb.linearVelocity = Vector2.zero;
 
-        // tam ortadan başla
-        transform.position = new Vector3(0f, startY, 0f);
+        // ORTA BAŞLAT
+        transform.position = new Vector3(0f, 0f, 0f);
 
-        // yana kaymayı tamamen kilitle
+        // X eksenini kilitle (yana kaymasın)
         rb.constraints = RigidbodyConstraints2D.FreezeRotation | RigidbodyConstraints2D.FreezePositionX;
     }
 
-    void OnTriggerEnter2D(Collider2D col)
-    {
-        if (col.CompareTag("ScoreGate"))
-            GameManager.Instance.AddScore(1);
-    }
 
     void OnCollisionEnter2D(Collision2D col)
     {
@@ -83,4 +82,9 @@ public class PlayerController : MonoBehaviour
         GameManager.Instance.GameOver();
     }
 
+    void OnTriggerEnter2D(Collider2D col)
+    {
+        if (col.CompareTag("ScoreGate"))
+            GameManager.Instance.AddScore(1);
+    }
 }

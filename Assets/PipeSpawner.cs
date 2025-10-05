@@ -35,7 +35,7 @@ public class PipeMover : MonoBehaviour
     void Update()
     {
         // Eðer oyun Playing deðilse, hareketi durdur
-        if (GameManager.Instance == null || GameManager.Instance.State != GameState.Playing)
+        if (GameManager.Instance == null || !GameManager.Instance.IsGameplayActive)
             return;
 
         transform.Translate(Vector3.left * speed * Time.deltaTime);

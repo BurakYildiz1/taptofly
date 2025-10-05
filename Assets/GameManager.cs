@@ -1,7 +1,7 @@
 using UnityEngine;
 using TMPro;
 
-public enum GameState { Ready, Playing, GameOver }
+public enum GameState { Ready, WaitingTap, Playing, GameOver }
 
 public class GameManager : MonoBehaviour
 {
@@ -12,63 +12,94 @@ public class GameManager : MonoBehaviour
     public GameObject startPanel;
     public GameObject gameOverPanel;
     public TextMeshProUGUI scoreText;
+    public TextMeshProUGUI bestTextTop;   // sol üstte sürekli görünen
 
     [Header("Gameplay")]
     public PlayerController player;
+    [SerializeField] Transform pipesRoot; // opsiyonel Inspector'dan baðla
 
-    private int score = 0;
+    int score = 0;
+    int bestScore;
+
+    public bool IsGameplayActive => State == GameState.Playing;
 
     void Awake()
     {
         if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
-        Application.targetFrameRate = 120;
+
+        bestScore = PlayerPrefs.GetInt("best", 0);
+        score = 0;
+
+        State = GameState.Ready;
+        UpdateScoreUI();
+        SetUI();
     }
 
     void Start() => SetUI();
 
     public void StartGame()
     {
+        // Start butonuna basýldý ? sahne hazýrlanýr ama gerçek oyun "ilk tap" ile baþlar
         score = 0;
+        ClearPipes();
         UpdateScoreUI();
-        State = GameState.Playing;
-        player.Begin();
-        ClearPipes();     // varsa borularý temizler (yoksa sorun deðil)
+
+        State = GameState.WaitingTap;     // <<< ÖNEMLÝ: pipelar henüz baþlamaz
         SetUI();
+
+        if (player) player.Begin();       // player ekranda bekler (gravity kapalý)
+    }
+
+    // Player ilk dokunuþu algýlayýnca burayý çaðýrýr
+    public void ActivatePlay()
+    {
+        if (State != GameState.WaitingTap) return;
+        State = GameState.Playing;        // <<< Artýk spawner/scroll çalýþýr
     }
 
     public void GameOver()
     {
         State = GameState.GameOver;
+
+        if (score > bestScore)
+        {
+            bestScore = score;
+            PlayerPrefs.SetInt("best", bestScore);
+            PlayerPrefs.Save();
+        }
+
+        UpdateScoreUI();                  // sol üst "Best" yazýsý anýnda güncellensin
         SetUI();
-        // Reklamý sonra ekleyeceðiz
     }
 
     public void Retry() => StartGame();
 
-    // ?? PlayerController burayý çaðýrýyor
     public void AddScore(int amount)
     {
+        if (State != GameState.Playing) return;
         score += amount;
+        if (score < 0) score = 0;
         UpdateScoreUI();
     }
 
-    private void UpdateScoreUI()
+    void UpdateScoreUI()
     {
         if (scoreText) scoreText.text = score.ToString();
+        if (bestTextTop) bestTextTop.text = $"Best: {bestScore}";
     }
 
-    private void SetUI()
+    void SetUI()
     {
         if (startPanel) startPanel.SetActive(State == GameState.Ready);
         if (gameOverPanel) gameOverPanel.SetActive(State == GameState.GameOver);
     }
 
-    private void ClearPipes()
+    void ClearPipes()
     {
-        var root = GameObject.Find("PipesRoot");
+        var root = pipesRoot ? pipesRoot : GameObject.Find("PipesRoot")?.transform;
         if (!root) return;
-        for (int i = root.transform.childCount - 1; i >= 0; i--)
-            Destroy(root.transform.GetChild(i).gameObject);
+        for (int i = root.childCount - 1; i >= 0; i--)
+            Destroy(root.GetChild(i).gameObject);
     }
 }
