@@ -7,7 +7,7 @@ public class Difficulty : MonoBehaviour
 
     [Header("Spawn")]
     public float baseInterval = 1.6f;
-    public float intervalStep = 0.10f; // level baþýna
+    public float intervalStep = 0.10f;
     public float minInterval = 0.9f;
 
     [Header("Gap")]
@@ -15,21 +15,22 @@ public class Difficulty : MonoBehaviour
     public float gapStep = 0.18f;
     public float minGap = 1.6f;
 
+    [Header("Scroll Speed")]                 // <<< YENÝ
+    public float baseSpeed = 2.6f;
+    public float speedStep = 0.25f;          // her level artýþý
+    public float maxSpeed = 5.0f;
+
     int level = 0;
 
-    public void ResetDiff()
-    {
-        level = 0;
-    }
-
-    public void LevelUp()
-    {
-        level++;
-    }
+    public void ResetDiff() => level = 0;
+    public void LevelUp() => level++;
 
     public float CurrentInterval() =>
         Mathf.Max(minInterval, baseInterval - level * intervalStep);
 
     public float CurrentGap() =>
         Mathf.Max(minGap, baseGap - level * gapStep);
+
+    public float CurrentSpeed() =>           // <<< YENÝ
+        Mathf.Min(maxSpeed, baseSpeed + level * speedStep);
 }

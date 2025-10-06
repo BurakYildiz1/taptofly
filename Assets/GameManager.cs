@@ -16,7 +16,8 @@ public class GameManager : MonoBehaviour
 
     [Header("Gameplay")]
     public PlayerController player;
-    [SerializeField] Transform pipesRoot; // opsiyonel Inspector'dan baðla
+    public Transform pipesRoot;
+    [SerializeField] private PipeSpawner spawner;
 
     int score = 0;
     int bestScore;
@@ -40,18 +41,19 @@ public class GameManager : MonoBehaviour
 
     public void StartGame()
     {
-        // Start butonuna basýldý ? sahne hazýrlanýr ama gerçek oyun "ilk tap" ile baþlar
         score = 0;
         ClearPipes();
         UpdateScoreUI();
 
-        State = GameState.WaitingTap;     // <<< ÖNEMLÝ: pipelar henüz baþlamaz
+        // <<< ÖNEMLÝ: her run baþýnda level sýfýrlansýn
+        if (Difficulty.Instance) Difficulty.Instance.ResetDiff();
+
+        State = GameState.WaitingTap;
         SetUI();
 
-        if (player) player.Begin();       // player ekranda bekler (gravity kapalý)
+        if (player) player.Begin();
     }
 
-    // Player ilk dokunuþu algýlayýnca burayý çaðýrýr
     public void ActivatePlay()
     {
         if (State != GameState.WaitingTap) return;
@@ -77,27 +79,32 @@ public class GameManager : MonoBehaviour
 
     public void AddScore(int v = 1)
     {
+        if (State != GameState.Playing) return;
+
         score += v;
-        scoreText.text = score.ToString();
+
+        if (scoreText != null)
+            scoreText.text = score.ToString();
 
         if (score > bestScore)
         {
             bestScore = score;
             PlayerPrefs.SetInt("best", bestScore);
-            bestTextTop.text = bestScore.ToString();
+            if (bestTextTop != null)
+                bestTextTop.text = bestScore.ToString();
         }
 
-        if (score > 0 && score % 25 == 0)
-        {
+        // 25'te seviye artýr (Difficulty varsa)
+        if (score > 0 && score % 25 == 0 && Difficulty.Instance != null)
             Difficulty.Instance.LevelUp();
-        }
     }
+
 
 
     void UpdateScoreUI()
     {
-        if (scoreText) scoreText.text = score.ToString();
-        if (bestTextTop) bestTextTop.text = $"Best: {bestScore}";
+        if (scoreText != null) scoreText.text = score.ToString();
+        if (bestTextTop != null) bestTextTop.text = $"Best: {bestScore}";
     }
 
     void SetUI()

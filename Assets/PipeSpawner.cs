@@ -1,44 +1,48 @@
 using UnityEngine;
-using System.Collections;
 
 public class PipeSpawner : MonoBehaviour
 {
-    public GameObject pipePrefab;  // içinde top & bottom parçalarý olacak
-    public float yLimit = 2.0f;    // merkez oynama limiti
+    public GameObject pipePairPrefab;
+    public float spawnInterval = 1.35f;
+    public float moveSpeed = 2.4f;
+    public float minY = -1.2f;
+    public float maxY = 1.2f;
 
-    Coroutine loop;
+    float timer;
 
-    public void StartSpawning()
+    void Update()
     {
-        StopSpawning();
-        loop = StartCoroutine(SpawnLoop());
-    }
+        if (GameManager.Instance == null || GameManager.Instance.State != GameState.Playing)
+            return;
 
-    public void StopSpawning()
-    {
-        if (loop != null) StopCoroutine(loop);
-        loop = null;
-    }
+        // Zorluk sistemi varsa interval ve speed'i oradan al
+        float interval = Difficulty.Instance ? Difficulty.Instance.CurrentInterval() : spawnInterval;
+        float speedNow = Difficulty.Instance ? Difficulty.Instance.CurrentSpeed() : moveSpeed;
 
-    IEnumerator SpawnLoop()
-    {
-        while (GameManager.Instance.State == GameState.Playing)
+        timer += Time.deltaTime;
+        if (timer >= interval)
         {
-            SpawnOne();
-            yield return new WaitForSeconds(Difficulty.Instance.CurrentInterval());
+            timer = 0f;
+            float y = Random.Range(minY, maxY);
+            GameObject go = Instantiate(pipePairPrefab, new Vector3(4.8f, y, 0f), Quaternion.identity, transform);
+            go.AddComponent<PipeMover>().speed = speedNow;
         }
     }
+}
 
-    void SpawnOne()
+public class PipeMover : MonoBehaviour
+{
+    public float speed = 2.4f;
+
+    void Update()
     {
-        float gap = Difficulty.Instance.CurrentGap();
+        if (GameManager.Instance == null || !GameManager.Instance.IsGameplayActive)
+            return;
 
-        float centerY = Random.Range(-yLimit, yLimit);
-        Vector3 pos = new Vector3(transform.position.x, centerY, 0f);
+        transform.Translate(Vector3.left * speed * Time.deltaTime);
 
-        var go = Instantiate(pipePrefab, pos, Quaternion.identity);
-        var p = go.GetComponent<Pipe>();
-        p.Setup(gap); // üst-alt ayrýmý burada yapýlacak
+        if (transform.position.x < -7.5f)
+            Destroy(gameObject);
     }
 }
 
@@ -57,23 +61,6 @@ public class PipeSkinManager : MonoBehaviour
     }
 }
 
-
-public class PipeMover : MonoBehaviour
-{
-    public float speed = 2.4f;
-
-    void Update()
-    {
-        // Eðer oyun Playing deðilse, hareketi durdur
-        if (GameManager.Instance == null || !GameManager.Instance.IsGameplayActive)
-            return;
-
-        transform.Translate(Vector3.left * speed * Time.deltaTime);
-
-        if (transform.position.x < -7.5f)
-            Destroy(gameObject);
-    }
-}
 public class Pipe : MonoBehaviour
 {
     public Transform topPart;
@@ -91,7 +78,9 @@ public class Pipe : MonoBehaviour
     void Update()
     {
         if (GameManager.Instance.State != GameState.Playing) return;
-        transform.Translate(Vector3.left * moveSpeed * Time.deltaTime);
+
+        float speed = Difficulty.Instance.CurrentSpeed();
+        transform.Translate(Vector3.left * speed * Time.deltaTime);
 
         if (transform.position.x < despawnX)
             Destroy(gameObject);
