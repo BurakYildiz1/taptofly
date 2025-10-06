@@ -75,13 +75,24 @@ public class GameManager : MonoBehaviour
 
     public void Retry() => StartGame();
 
-    public void AddScore(int amount)
+    public void AddScore(int v = 1)
     {
-        if (State != GameState.Playing) return;
-        score += amount;
-        if (score < 0) score = 0;
-        UpdateScoreUI();
+        score += v;
+        scoreText.text = score.ToString();
+
+        if (score > bestScore)
+        {
+            bestScore = score;
+            PlayerPrefs.SetInt("best", bestScore);
+            bestTextTop.text = bestScore.ToString();
+        }
+
+        if (score > 0 && score % 25 == 0)
+        {
+            Difficulty.Instance.LevelUp();
+        }
     }
+
 
     void UpdateScoreUI()
     {

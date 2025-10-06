@@ -74,7 +74,6 @@ public class PlayerController : MonoBehaviour
         rb.constraints = RigidbodyConstraints2D.FreezeRotation | RigidbodyConstraints2D.FreezePositionX;
     }
 
-
     void OnCollisionEnter2D(Collision2D col)
     {
         if (!isAlive) return;
@@ -87,4 +86,23 @@ public class PlayerController : MonoBehaviour
         if (col.CompareTag("ScoreGate"))
             GameManager.Instance.AddScore(1);
     }
+    public class PlayerSkinManager : MonoBehaviour
+    {
+        public SpriteRenderer spriteRenderer;
+        public Sprite[] skins;
+        int currentSkinIndex = 0;
+
+        public void SetSkin(int index)
+        {
+            currentSkinIndex = Mathf.Clamp(index, 0, skins.Length - 1);
+            spriteRenderer.sprite = skins[currentSkinIndex];
+            PlayerPrefs.SetInt("playerSkin", currentSkinIndex);
+        }
+
+        void Start()
+        {
+            SetSkin(PlayerPrefs.GetInt("playerSkin", 0));
+        }
+    }
+
 }
