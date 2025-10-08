@@ -24,7 +24,7 @@ public class Difficulty : MonoBehaviour
 
     public void ResetDiff() => level = 0;
     public void LevelUp() => level++;
-
+    public int CurrentLevel => level;
     public float CurrentInterval() =>
         Mathf.Max(minInterval, baseInterval - level * intervalStep);
 
@@ -33,4 +33,5 @@ public class Difficulty : MonoBehaviour
 
     public float CurrentSpeed() =>           // <<< YENÝ
         Mathf.Min(maxSpeed, baseSpeed + level * speedStep);
+
 }

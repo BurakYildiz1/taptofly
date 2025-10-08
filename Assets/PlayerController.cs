@@ -16,6 +16,11 @@ public class PlayerController : MonoBehaviour
     bool isAlive = false;
     bool waitingFirstTap = false;
 
+    [Header("SFX")]
+    [SerializeField] AudioSource sfxSource;   // Player üstüne koyabilirsin
+    [SerializeField] AudioClip tapClip;       // her tap'te çalınacak
+    [SerializeField, Range(0f, 1f)] float tapVolume = 0.9f;
+
 
     [Header("Tilt")]
     [SerializeField] float tiltMaxUp = 30f;     // yukarı bakış limiti
@@ -55,6 +60,7 @@ public class PlayerController : MonoBehaviour
             rb.linearVelocity = Vector2.zero; // linearVelocity değil!
             rb.AddForce(Vector2.up * flapForce, ForceMode2D.Impulse);
             if (flameSprite) StartCoroutine(FlameBurst());
+            if (sfxSource && tapClip) sfxSource.PlayOneShot(tapClip, tapVolume);
 
             GameManager.Instance.ActivatePlay();
             return;
@@ -66,6 +72,8 @@ public class PlayerController : MonoBehaviour
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0f);
             rb.AddForce(Vector2.up * flapForce, ForceMode2D.Impulse);
             if (flameSprite) StartCoroutine(FlameBurst());
+            if (sfxSource && tapClip) sfxSource.PlayOneShot(tapClip, tapVolume);
+
         }
 
         // --- Tilt (burun açısı) ---

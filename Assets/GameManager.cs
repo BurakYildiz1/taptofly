@@ -19,6 +19,13 @@ public class GameManager : MonoBehaviour
     public Transform pipesRoot;
     [SerializeField] private PipeSpawner spawner;
 
+    [Header("SFX")]
+    [SerializeField] AudioSource sfxSource;     // Canvas / GameManager üstünde tek kaynak
+    [SerializeField] AudioClip levelUpClip;     // 25'te çalýnacak
+    [SerializeField, Range(0f, 1f)] float levelUpVolume = 1f;
+    [SerializeField] AudioClip hitClip;
+
+
     int score = 0;
     int bestScore;
 
@@ -63,6 +70,10 @@ public class GameManager : MonoBehaviour
     public void GameOver()
     {
         State = GameState.GameOver;
+        var shake = Camera.main ? Camera.main.GetComponent<CameraShake2D>() : null;
+        if (shake) shake.Shake(0.35f, 0.25f);
+        if (sfxSource && hitClip) sfxSource.PlayOneShot(hitClip, 1f);
+        State = GameState.GameOver;
 
         if (score > bestScore)
         {
@@ -70,7 +81,6 @@ public class GameManager : MonoBehaviour
             PlayerPrefs.SetInt("best", bestScore);
             PlayerPrefs.Save();
         }
-
         UpdateScoreUI();                  // sol üst "Best" yazýsý anýnda güncellensin
         SetUI();
     }
@@ -97,9 +107,23 @@ public class GameManager : MonoBehaviour
         // 25'te seviye artýr (Difficulty varsa)
         if (score > 0 && score % 25 == 0 && Difficulty.Instance != null)
             Difficulty.Instance.LevelUp();
+        if (score > 0 && score % 5 == 0)
+        {
+
+            if (Difficulty.Instance) Difficulty.Instance.LevelUp();
+            if (sfxSource && levelUpClip) sfxSource.PlayOneShot(levelUpClip, levelUpVolume);
+            // Card popup
+            var card = FindObjectOfType<LevelUpCard>(true);
+            if (card)
+            {
+                int lvl = (Difficulty.Instance != null) ? Difficulty.Instance.CurrentLevel : (score / 25) + 1;
+                card.Show(lvl);
+            }
+            // Shake (aþaðýdaki script)
+            var shake = Camera.main ? Camera.main.GetComponent<CameraShake2D>() : null;
+            if (shake) shake.Shake(0.15f, 0.12f);
+        }
     }
-
-
 
     void UpdateScoreUI()
     {
