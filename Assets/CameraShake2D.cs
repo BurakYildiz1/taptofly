@@ -1,28 +1,56 @@
 using UnityEngine;
+using System.Collections;
 
 public class CameraShake2D : MonoBehaviour
 {
-    Vector3 originalPos;
+    [SerializeField] Transform target;   // Boþ býrakýlýrsa kendi transform’u kullanýr
+    Vector3 _originalPos;
+    Coroutine _running;
 
-    void Awake() => originalPos = transform.localPosition;
-
-    public void Shake(float intensity = 0.2f, float duration = 0.15f)
+    void Awake()
     {
-        StopAllCoroutines();
-        StartCoroutine(DoShake(intensity, duration));
+        if (!target) target = transform;
+        _originalPos = target.localPosition;
     }
 
-    System.Collections.IEnumerator DoShake(float intensity, float duration)
+    void OnDisable()
     {
-        float t = 0f;
-        while (t < duration)
+        // Olasý donuk offset’i sýfýrla
+        if (target) target.localPosition = _originalPos;
+        _running = null;
+    }
+
+    public void Shake(float amplitude, float duration, bool useUnscaledTime = true)
+    {
+        if (_running != null) StopCoroutine(_running);
+        _running = StartCoroutine(DoShake(amplitude, duration, useUnscaledTime));
+    }
+
+    IEnumerator DoShake(float amp, float dur, bool unscaled)
+    {
+        float elapsed = 0f;
+
+        while (elapsed < dur)
         {
-            t += Time.deltaTime;
-            float damper = 1f - (t / duration);          // yavaþça sönsün
-            Vector2 offset = Random.insideUnitCircle * intensity * damper;
-            transform.localPosition = originalPos + (Vector3)offset;
-            yield return null;
+            float dt = unscaled ? Time.unscaledDeltaTime : Time.deltaTime;
+            elapsed += dt;
+
+            // 2D için küçük bir rastgele sapma
+            Vector2 offset2D = Random.insideUnitCircle * amp;
+            target.localPosition = _originalPos + new Vector3(offset2D.x, offset2D.y, 0f);
+
+            yield return null; // unscaled bekleyiþ gerekmez; dt zaten unscaled
         }
-        transform.localPosition = originalPos;
+
+        // Temizle
+        target.localPosition = _originalPos;
+        _running = null;
+    }
+
+    public void StopShakeAndReset()
+    {
+        if (_running != null) StopCoroutine(_running);
+        if (target) target.localPosition = _originalPos;
+        _running = null;
     }
 }

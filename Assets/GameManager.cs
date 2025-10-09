@@ -81,6 +81,8 @@ public class GameManager : MonoBehaviour
         if (pausePanel) pausePanel.SetActive(true);
         if (hudPanel) hudPanel.SetActive(false);
         if (freezeTimeOnPause) Time.timeScale = 0f;
+        var shake = Camera.main ? Camera.main.GetComponent<CameraShake2D>() : null;
+        if (shake) shake.StopShakeAndReset();
     }
 
     public void ResumeGame()
@@ -90,6 +92,8 @@ public class GameManager : MonoBehaviour
         if (pausePanel) pausePanel.SetActive(false);
         if (hudPanel) hudPanel.SetActive(true);
         ResumeTime();
+        var shake = Camera.main ? Camera.main.GetComponent<CameraShake2D>() : null;
+        if (shake) shake.StopShakeAndReset();
     }
 
     public void Retry()
@@ -105,6 +109,8 @@ public class GameManager : MonoBehaviour
 
         State = GameState.WaitingTap;
         SetUI();
+        var shake = Camera.main ? Camera.main.GetComponent<CameraShake2D>() : null;
+        if (shake) shake.StopShakeAndReset();
     }
 
     public void ReturnToMenu()
@@ -137,7 +143,6 @@ public class GameManager : MonoBehaviour
             PlayerPrefs.SetInt("best", bestScore);
             PlayerPrefs.Save();
         }
-
         UpdateScoreUI();
         SetUI();
         StopTime(); // küçük dramatik duruþ
@@ -159,7 +164,7 @@ public class GameManager : MonoBehaviour
         }
 
         // Seviye/artýþ & efekt
-        if (score > 0 && score % 5 == 0)
+        if (score > 0 && score % 25 == 0)
         {
             if (Difficulty.Instance) Difficulty.Instance.LevelUp();
             if (sfxSource && levelUpClip) sfxSource.PlayOneShot(levelUpClip, levelUpVolume);
